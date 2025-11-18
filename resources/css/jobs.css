@@ -1,0 +1,62 @@
+/* ---- Jobs Page Styling ---- */
+.hover-card {
+    transition: all 0.25s ease-in-out;
+    border-radius: 16px;
+    overflow: hidden;
+    border: 1px solid rgba(0,0,0,0.08);
+}
+
+.hover-card:hover {
+    transform: translateY(-6px) scale(1.01);
+    box-shadow: 0 6px 18px rgba(0,0,0,0.12);
+}
+
+.card-img-top {
+    transition: transform 0.3s ease;
+}
+.card-img-top:hover {
+    transform: scale(1.05);
+}
+
+.card-footer {
+    background-color: #f9fafb !important;
+}
+
+.btn-outline-warning:hover {
+    background-color: #ffc107;
+    color: #fff;
+}
+.btn-outline-danger:hover {
+    background-color: #dc3545;
+    color: #fff;
+}
+
+/* Custom Modal (for delete confirmation) */
+.modal-overlay {
+    position: fixed;
+    inset: 0;
+    background: rgba(0,0,0,0.5);
+    display: none;
+    justify-content: center;
+    align-items: center;
+    z-index: 1050;
+}
+
+.modal-box {
+    background: #fff;
+    padding: 2rem;
+    border-radius: 12px;
+    text-align: center;
+    width: 320px;
+    box-shadow: 0 8px 20px rgba(0,0,0,0.2);
+}
+
+.modal-box h5 {
+    font-weight: 600;
+    color: #333;
+    margin-bottom: 1rem;
+}
+
+.modal-buttons button {
+    margin: 0 0.5rem;
+}
