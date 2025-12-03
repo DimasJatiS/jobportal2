@@ -1,10 +1,24 @@
-# Stage 1: ambil composer binary
-FROM composer:2.6 AS composer_stage
+# =========================
+# Stage 1: Composer (build)
+# =========================
+FROM composer:2.6 AS build
 
-# Stage 2: web server + PHP
+WORKDIR /app
+
+# Copy composer files dan install dependencies (tanpa dev)
+COPY composer.json composer.lock ./
+RUN composer install \
+    --no-dev \
+    --prefer-dist \
+    --no-interaction \
+    --no-progress
+
+# =========================
+# Stage 2: PHP + Apache
+# =========================
 FROM php:8.3-apache
 
-# Install dependency sistem + ekstensi PHP (PDO MySQL, ZIP, GD)
+# Install dependency sistem + ekstensi PHP (GD, ZIP, MySQL, PostgreSQL)
 RUN apt-get update && apt-get install -y \
         git \
         unzip \
@@ -12,33 +26,41 @@ RUN apt-get update && apt-get install -y \
         libpng-dev \
         libjpeg62-turbo-dev \
         libfreetype6-dev \
+        libpq-dev \
     && docker-php-ext-configure gd --with-freetype --with-jpeg \
-    && docker-php-ext-install pdo_mysql zip gd \
+    && docker-php-ext-install \
+        pdo_mysql \
+        pdo_pgsql \
+        pgsql \
+        zip \
+        gd \
     && a2enmod rewrite \
     && rm -rf /var/lib/apt/lists/*
 
-# Copy composer dari stage pertama
-COPY --from=composer_stage /usr/bin/composer /usr/bin/composer
-
-# Set workdir
+# Set working directory
 WORKDIR /var/www/html
 
-# Copy semua kode aplikasi
+# Copy seluruh source code aplikasi
 COPY . .
 
-# Install dependency PHP (tanpa dev)
-RUN composer install --no-dev --optimize-autoloader --no-interaction
+# Copy folder vendor dari stage build
+COPY --from=build /app/vendor ./vendor
+COPY --from=build /app/composer.json ./composer.json
+COPY --from=build /app/composer.lock ./composer.lock
 
 # Set document root Apache ke public Laravel
 ENV APACHE_DOCUMENT_ROOT=/var/www/html/public
 
-RUN sed -ri -e 's!/var/www/html!${APACHE_DOCUMENT_ROOT}!g' /etc/apache2/sites-available/*.conf \
-    && sed -ri -e 's!/var/www/!${APACHE_DOCUMENT_ROOT}!g' /etc/apache2/apache2.conf
+RUN sed -ri -e "s!/var/www/html!${APACHE_DOCUMENT_ROOT}!g" /etc/apache2/sites-available/*.conf \
+    && sed -ri -e "s!/var/www/!${APACHE_DOCUMENT_ROOT}!g" /etc/apache2/apache2.conf
 
-# Permission untuk storage & cache
-RUN chown -R www-data:www-data storage bootstrap/cache
+# Pastikan folder storage & cache ada dan bisa ditulis
+RUN mkdir -p storage/framework/{cache,sessions,views} \
+    && mkdir -p bootstrap/cache \
+    && chown -R www-data:www-data storage bootstrap/cache \
+    && chmod -R 775 storage bootstrap/cache
 
 EXPOSE 80
 
-# Command default: jalankan Apache
+# Jalankan Apache
 CMD ["apache2-foreground"]
