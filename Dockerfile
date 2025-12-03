@@ -1,8 +1,6 @@
 FROM php:8.3-apache
 
-# =========================
 # 1) Install sistem deps + ekstensi PHP
-# =========================
 RUN apt-get update && apt-get install -y \
         git \
         unzip \
@@ -21,39 +19,29 @@ RUN apt-get update && apt-get install -y \
     && a2enmod rewrite \
     && rm -rf /var/lib/apt/lists/*
 
-# =========================
-# 2) Copy composer binary
-# =========================
+# 2) Composer sebagai root (boleh) 
 COPY --from=composer:2.6 /usr/bin/composer /usr/bin/composer
+ENV COMPOSER_ALLOW_SUPERUSER=1
 
-# =========================
-# 3) Set workdir & install dependency PHP
-# =========================
+# 3) Copy source code aplikasi
 WORKDIR /var/www/html
+COPY . .
 
-# Copy hanya file composer dulu, supaya layer cache efisien
-COPY composer.json composer.lock ./
-
+# 4) Install dependency PHP
 RUN composer install \
     --no-dev \
     --prefer-dist \
     --no-interaction \
-    --no-progress
+    --no-progress \
+    --optimize-autoloader
 
-# =========================
-# 4) Copy source code aplikasi
-# =========================
-COPY . .
-
-# Pastikan folder storage dan cache ada & bisa ditulis
+# 5) Pastikan storage & cache siap
 RUN mkdir -p storage/framework/{cache,sessions,views} \
     && mkdir -p bootstrap/cache \
     && chown -R www-data:www-data storage bootstrap/cache \
     && chmod -R 775 storage bootstrap/cache
 
-# =========================
-# 5) Set document root Laravel ke public/
-# =========================
+# 6) Set document root ke public/
 ENV APACHE_DOCUMENT_ROOT=/var/www/html/public
 
 RUN sed -ri -e 's!/var/www/html!${APACHE_DOCUMENT_ROOT}!g' /etc/apache2/sites-available/*.conf \
