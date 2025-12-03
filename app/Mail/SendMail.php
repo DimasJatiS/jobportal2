@@ -2,6 +2,7 @@
 
 namespace App\Mail;
 
+use App\Models\Application;
 use Illuminate\Bus\Queueable;
 use Illuminate\Contracts\Queue\ShouldQueue;
 use Illuminate\Mail\Mailable;
@@ -9,24 +10,24 @@ use Illuminate\Mail\Mailables\Content;
 use Illuminate\Mail\Mailables\Envelope;
 use Illuminate\Queue\SerializesModels;
 
-class SendEmail extends Mailable
+class SendMail extends Mailable implements ShouldQueue
 {
     use Queueable, SerializesModels;
 
-    public $data;
+    public $application;
 
     /**
      * Create a new message instance.
      */
-    public function __construct($data)
+    public function __construct( Application $application)
     {
-        $this->data = $data;
+        $this->application = $application;
     }
 
     public function build()
     {
-        return $this->subject($this->data['subject'])
-        ->view('emails.sendemail');
+        return $this->subject("Terima Kasih Telah Melamar di " . $this->application->job->company_name)
+                    ->markdown("emails.applications.received");
     }
 
 

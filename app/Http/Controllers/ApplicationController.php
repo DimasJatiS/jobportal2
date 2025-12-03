@@ -4,9 +4,14 @@ namespace App\Http\Controllers;
 
 use App\Models\Application;
 use App\Models\JobVacancy;
+use App\Models\User;
 use Illuminate\Http\Request;
 use Maatwebsite\Excel\Facades\Excel;
 use App\Exports\ApplicationsExport;
+use App\Mail\ApplicationReceivedMail;
+use App\Notifications\NewApplicationNotification;
+use Illuminate\Support\Facades\Mail;
+use Illuminate\Support\Facades\Notification;
 
 class ApplicationController extends Controller
 {
@@ -25,6 +30,17 @@ class ApplicationController extends Controller
             'cv'      => $cvPath,
             'status'  => 'Pending',
         ]);
+
+        // Kirim email konfirmasi ke pelamar
+        Mail::to($application->user->email)
+            ->queue(new ApplicationReceivedMail($application));
+
+        // Kirim notifikasi ke admin
+        $admins = User::where('role', 'admin')->get();
+
+        if ($admins->count()) {
+            Notification::send($admins, new NewApplicationNotification($application));
+        }
 
         return back()->with('success', 'Lamaran berhasil dikirim!');
     }

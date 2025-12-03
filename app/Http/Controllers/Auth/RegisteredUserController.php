@@ -45,6 +45,22 @@ class RegisteredUserController extends Controller
         ]);
 
         event(new Registered($user));
+
+        // If the client expects JSON, return JSON instead of redirect
+        if ($request->expectsJson()) {
+            $token = null;
+            if (method_exists($user, 'createToken')) {
+                $token = $user->createToken('auth_token')->plainTextToken;
+            }
+
+            return response()->json([
+                'message' => 'User registered successfully',
+                'user' => $user,
+                'access_token' => $token,
+                'token_type' => $token ? 'Bearer' : null,
+            ], 201);
+        }
+
         Auth::login($user);
 
         return redirect(RouteServiceProvider::HOME);

@@ -8,6 +8,11 @@
     <div class="py-10">
         <div class="max-w-6xl mx-auto sm:px-6 lg:px-8">
 
+            @foreach(auth()->user()->unreadNotifications as $notif)
+                <li>{{ $notif->data['user_name'] }} melamar {{ $notif->data['job_title'] }}</li>
+            @endforeach
+
+
             <div class="bg-gray-800 p-8 rounded-2xl shadow-lg">
 
                 {{-- FILTER & EXPORT --}}

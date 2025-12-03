@@ -25,7 +25,9 @@ class DashboardController extends Controller
 
         // DASHBOARD ADMIN
         if ($user->role === 'admin') {
-
+            
+            $notifications = auth()->user()->unreadNotifications()->latest()->take(5)->get();
+            
             $stats = [
                 'total_jobs' => JobVacancy::count(),
                 'total_applications' => Application::count(),
