@@ -7,6 +7,9 @@ FROM php:8.3-apache
 # Install dependency sistem + ekstensi yang dibutuhkan Laravel
 RUN apt-get update && apt-get install -y \
     git unzip libzip-dev \
+    libpng-dev libjpeg-dev libfreetype6-dev \
+    
+    && docker-php-ext-configure gd --with-freetype --with-jpeg \
     && docker-php-ext-install pdo_mysql zip \
     && a2enmod rewrite \
     && rm -rf /var/lib/apt/lists/*
