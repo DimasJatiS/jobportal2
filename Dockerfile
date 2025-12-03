@@ -1,24 +1,8 @@
-# =========================
-# Stage 1: Composer (build)
-# =========================
-FROM composer:2.6 AS build
-
-WORKDIR /app
-
-# Copy composer files dan install dependencies (tanpa dev)
-COPY composer.json composer.lock ./
-RUN composer install \
-    --no-dev \
-    --prefer-dist \
-    --no-interaction \
-    --no-progress
-
-# =========================
-# Stage 2: PHP + Apache
-# =========================
 FROM php:8.3-apache
 
-# Install dependency sistem + ekstensi PHP (GD, ZIP, MySQL, PostgreSQL)
+# =========================
+# 1) Install sistem deps + ekstensi PHP
+# =========================
 RUN apt-get update && apt-get install -y \
         git \
         unzip \
@@ -32,35 +16,49 @@ RUN apt-get update && apt-get install -y \
         pdo_mysql \
         pdo_pgsql \
         pgsql \
-        zip \
         gd \
+        zip \
     && a2enmod rewrite \
     && rm -rf /var/lib/apt/lists/*
 
-# Set working directory
+# =========================
+# 2) Copy composer binary
+# =========================
+COPY --from=composer:2.6 /usr/bin/composer /usr/bin/composer
+
+# =========================
+# 3) Set workdir & install dependency PHP
+# =========================
 WORKDIR /var/www/html
 
-# Copy seluruh source code aplikasi
+# Copy hanya file composer dulu, supaya layer cache efisien
+COPY composer.json composer.lock ./
+
+RUN composer install \
+    --no-dev \
+    --prefer-dist \
+    --no-interaction \
+    --no-progress
+
+# =========================
+# 4) Copy source code aplikasi
+# =========================
 COPY . .
 
-# Copy folder vendor dari stage build
-COPY --from=build /app/vendor ./vendor
-COPY --from=build /app/composer.json ./composer.json
-COPY --from=build /app/composer.lock ./composer.lock
-
-# Set document root Apache ke public Laravel
-ENV APACHE_DOCUMENT_ROOT=/var/www/html/public
-
-RUN sed -ri -e "s!/var/www/html!${APACHE_DOCUMENT_ROOT}!g" /etc/apache2/sites-available/*.conf \
-    && sed -ri -e "s!/var/www/!${APACHE_DOCUMENT_ROOT}!g" /etc/apache2/apache2.conf
-
-# Pastikan folder storage & cache ada dan bisa ditulis
+# Pastikan folder storage dan cache ada & bisa ditulis
 RUN mkdir -p storage/framework/{cache,sessions,views} \
     && mkdir -p bootstrap/cache \
     && chown -R www-data:www-data storage bootstrap/cache \
     && chmod -R 775 storage bootstrap/cache
 
+# =========================
+# 5) Set document root Laravel ke public/
+# =========================
+ENV APACHE_DOCUMENT_ROOT=/var/www/html/public
+
+RUN sed -ri -e 's!/var/www/html!${APACHE_DOCUMENT_ROOT}!g' /etc/apache2/sites-available/*.conf \
+    && sed -ri -e 's!/var/www/!${APACHE_DOCUMENT_ROOT}!g' /etc/apache2/apache2.conf
+
 EXPOSE 80
 
-# Jalankan Apache
 CMD ["apache2-foreground"]
